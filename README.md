@@ -1,4 +1,4 @@
-# ODEs-and-DL
+# ODEs-informed Machine Learning for Epidemic Spreading Forecasting
 
 ## Description
 1. EDA/: 
@@ -10,14 +10,16 @@
 * Statistical_Analysis_Covid19.ipynb: Statistical a nalysis of COVID-19 trajectories.
    
 2. Learn_Single_ODE_Sample/: 
-* model.py: TF-net pytorch implementation.
-*. penalty.py: a few regularizers we have tried.
-3. train.py: data loaders, train epoch, validation epoch, test epoch functions.
-4. run_model.py: Scripts to train TF-Net
+* FC-Generalization.ipynb: Experiments on testing the generalization ability of dense neural nets.
+* Learn_Single_Sample_LV.ipynb: Learn the single LV sample with ODE and DL methods.
+* Learn_Single_Sample_SEIR.ipynb: Learn the single LV sample with ODE and DL methods.
+* neural_odes.py: Neural LV module.
 
 3. Main/:
-   1. Evaluation.ipynb: contains the functions of four evaluation metrics.
-   2. radialProfile.py: a helper function for calculating energy spectrum.
+* Evaluation.ipynb: contains the functions of four evaluation metrics.
+* Run_model.ipynb: a helper function for calculating energy spectrum.
+* SuEIRD_Piecewise.ipynb: Pytorch implementation of AdjMask_SuEIRD. 
+* ode_nn: Pytorch implementation of Seq2Seq, Auto-FC, Transformer, Neural ODE, AutoODE, Graph Attention, Graph Convolution.
 
 
 ## Requirement
