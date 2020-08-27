@@ -10,10 +10,10 @@
 * Statistical_Analysis_Covid19.ipynb: Statistical a nalysis of COVID-19 trajectories.
    
 2. Learn_Single_ODE_Sample/: 
-   1. model.py: TF-net pytorch implementation.
-   2. penalty.py: a few regularizers we have tried.
-   3. train.py: data loaders, train epoch, validation epoch, test epoch functions.
-   4. run_model.py: Scripts to train TF-Net
+* model.py: TF-net pytorch implementation.
+*. penalty.py: a few regularizers we have tried.
+3. train.py: data loaders, train epoch, validation epoch, test epoch functions.
+4. run_model.py: Scripts to train TF-Net
 
 3. Main/:
    1. Evaluation.ipynb: contains the functions of four evaluation metrics.
