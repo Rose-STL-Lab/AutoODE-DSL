@@ -2,12 +2,12 @@
 
 ## Description
 1. EDA/: 
-   *  ARIMA.ipynb: Synthetic arima time series generation.
-   *  LV_Data.ipynb: Synthetic Lotka–Volterra dynamics generation.
-   *  S(E)IR_Simulation.ipynb: Synthetic S(E)IR dynamics generation.
-   *  SuEIRD_Simulation.ipynb: Synthetic SEIRD dynamics generation.
-   *  EDA_Covid19.ipynb: Explotary data analysis of COVID-19 trajectories.
-   *  Statistical_Analysis_Covid19.ipynb: Statistical a nalysis of COVID-19 trajectories.
+* ARIMA.ipynb: Synthetic arima time series generation.
+* LV_Data.ipynb: Synthetic Lotka–Volterra dynamics generation.
+* S(E)IR_Simulation.ipynb: Synthetic S(E)IR dynamics generation.
+* SuEIRD_Simulation.ipynb: Synthetic SEIRD dynamics generation.
+* EDA_Covid19.ipynb: Explotary data analysis of COVID-19 trajectories.
+* Statistical_Analysis_Covid19.ipynb: Statistical a nalysis of COVID-19 trajectories.
    
 2. Learn_Single_ODE_Sample/: 
    1. model.py: TF-net pytorch implementation.
@@ -20,7 +20,7 @@
    2. radialProfile.py: a helper function for calculating energy spectrum.
 
 
-### Requirement
+## Requirement
 * python 3.6
 * pytorch 10.1
 * matplotlib
