@@ -16,8 +16,8 @@
 * neural_odes.py: Neural LV module.
 
 3. Main/:
-* Evaluation.ipynb: contains the functions of four evaluation metrics.
-* Run_model.ipynb: a helper function for calculating energy spectrum.
+* Evaluation.ipynb: functions of evaluation metrics.
+* Run_model.ipynb: run model function.
 * SuEIRD_Piecewise.ipynb: Pytorch implementation of AdjMask_SuEIRD. 
 * ode_nn: Pytorch implementation of Seq2Seq, Auto-FC, Transformer, Neural ODE, AutoODE, Graph Attention, Graph Convolution.
 
