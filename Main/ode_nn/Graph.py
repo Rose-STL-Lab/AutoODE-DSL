@@ -45,12 +45,15 @@ class GAT_Layer(nn.Module):
             return g, out
 
 class GAT(nn.Module):
-    def __init__(self, in_dim, out_dim, hidden_dim, num_heads, num_layer = 5):
+    def __init__(self, in_dim, out_dim, hidden_dim, num_heads, num_layer = 5, quantile = False):
         super(GAT, self).__init__()
         self.model = [GAT_Layer(in_dim, hidden_dim)]
         self.model += [GAT_Layer(hidden_dim*num_heads, hidden_dim) for i in range(num_layer-2)]
         self.output_layer = nn.Linear(hidden_dim*num_heads, out_dim)
         self.model = mySequential(*self.model)
+        self.quantile = quantile 
+        if self.quantile:
+            self.quantile = nn.Linear(1, 3)
 
     def forward(self, g, xx, output_length):
         outputs = []
@@ -58,16 +61,24 @@ class GAT(nn.Module):
             out = self.output_layer(self.model(g, xx)[1])
             xx = torch.cat([xx[:,:,3:], out], dim = -1)
             outputs.append(out.unsqueeze(2))
-        return torch.cat(outputs, dim = 2)
+        out = torch.cat(outputs, dim = 2)
+        #print(out.unsqueeze(-1).shape)
+        if self.quantile:
+            out = self.quantile(out.unsqueeze(-1))
+        return out
+    
 
     
 class GCN(nn.Module):
-    def __init__(self, in_dim, out_dim, hidden_dim, num_layer = 5):
+    def __init__(self, in_dim, out_dim, hidden_dim, num_layer = 5, quantile = False):
         super(GCN, self).__init__()
         self.model = [GCN_Layer(in_dim, hidden_dim)]
         self.model += [GCN_Layer(hidden_dim, hidden_dim) for i in range(num_layer-2)]
         self.model += [GCN_Layer(hidden_dim, out_dim, is_final_layer = True)]
         self.model = mySequential(*self.model)
+        self.quantile = quantile 
+        if self.quantile:
+            self.quantile = nn.Linear(1, 3)
 
     def forward(self, g, xx, output_length):
         xx = xx.transpose(0,1)
@@ -76,4 +87,8 @@ class GCN(nn.Module):
             out = self.model(g, xx)
             xx = torch.cat([xx[:,:,3:], out], dim = -1)
             outputs.append(out.unsqueeze(2))
-        return torch.cat(outputs, dim = 2).transpose(0,1)
+        out = torch.cat(outputs, dim = 2).transpose(0,1)
+    
+        if self.quantile:
+            out = self.quantile(out.unsqueeze(-1))
+        return out
