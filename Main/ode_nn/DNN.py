@@ -1,33 +1,37 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from ode_nn.torchdiffeq import odeint_adjoint as odeint
+#from ode_nn.torchdiffeq import odeint_adjoint as odeint
+from ode_nn.torchdiffeq import odeint
+
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 ######## Auto-FC ########
 class Auto_FC(nn.Module):
-    def __init__(self, input_length, input_dim, output_dim, hidden_dim):
+    def __init__(self, input_length, input_dim, output_dim, hidden_dim, quantile = False):
         super(Auto_FC, self).__init__()
+        self.quantile = quantile 
         self.input_dim = input_dim
-        self.output_dim = output_dim
+        self.output_dim = output_dim 
         self.input_length = input_length
         self.model = nn.Sequential(
             nn.Linear(input_length*input_dim, hidden_dim),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(hidden_dim, output_dim)
         )
+        if self.quantile:
+            self.quantile = nn.Linear(1, 3)
+            
     def forward(self, xx, output_length):
         xx = xx.reshape(xx.shape[0], -1)
         outputs = []
@@ -35,7 +39,10 @@ class Auto_FC(nn.Module):
             out = self.model(xx)
             xx = torch.cat([xx[:, self.input_dim:], out], dim = 1)  
             outputs.append(out.unsqueeze(1))
-        return torch.cat(outputs, dim = 1)
+        out = torch.cat(outputs, dim = 1)
+        if self.quantile:
+            out = self.quantile(out.unsqueeze(-1))
+        return out
 
 ######## Seq2Seq ########
 class Encoder(nn.Module):
@@ -59,19 +66,22 @@ class Decoder(nn.Module):
                             dropout = dropout_rate, batch_first = True)
         
         self.out = nn.Linear(hidden_dim, output_dim)
-      
+        
     def forward(self, x, hidden):
         output, hidden = self.lstm(x, hidden)   
         prediction = self.out(output.float())
         return prediction, hidden     
     
 class Seq2Seq(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dim, num_layers):
+    def __init__(self, input_dim, output_dim, hidden_dim, num_layers, quantile = False):
         super(Seq2Seq, self).__init__()
         self.encoder = Encoder(input_dim = input_dim, hidden_dim = hidden_dim, num_layers = num_layers).to(device)
         self.decoder = Decoder(output_dim = output_dim, hidden_dim = hidden_dim, num_layers = num_layers).to(device)
         self.output_dim = output_dim
-        
+        self.quantile = quantile 
+        if self.quantile:
+            self.quantile = nn.Linear(1, 3)
+            
     def forward(self, source, target_length):
         batch_size = source.size(0) 
         input_length = source.size(1) 
@@ -85,14 +95,17 @@ class Seq2Seq(nn.Module):
         for t in range(target_length):  
             decoder_output, decoder_hidden = self.decoder(decoder_output, decoder_hidden)
             outputs.append(decoder_output)
-        return torch.cat(outputs, dim = 1)   
+        out = torch.cat(outputs, dim = 1)   
+        if self.quantile:
+            out = self.quantile(out.unsqueeze(-1))
+        return out
     
     
 ######## Transformer ########
 #Tranformer Encoder Only
-class Transformer2(nn.Module):
+class Transformer_EncoderOnly(nn.Module):
     def __init__(self, input_dim, output_dim, nhead = 4, d_model = 128, num_layers = 6, dim_feedforward = 256):
-        super(Transformer2, self).__init__()
+        super(Transformer_EncoderOnly, self).__init__()
         encoder_layer = nn.TransformerEncoderLayer(d_model, nhead, dim_feedforward, dropout = 0)#.to(device)
         decoder_layer = nn.TransformerDecoderLayer(d_model, nhead, dim_feedforward, dropout = 0)#.to(device)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers = num_layers)#.to(device)
@@ -112,6 +125,9 @@ class Transformer2(nn.Module):
         src_mask = self._generate_square_subsequent_mask(src.shape[0]).to(device)
         encoder_output = self.transformer_encoder(src, mask = src_mask)#
         outputs = []
+        if output_length == xx.shape[1]:
+            out = self.output_layer(encoder_output).transpose(0,1)
+            return out
         for i in range(output_length):
             out = self.output_layer(encoder_output).transpose(0,1)[:,-1:]
             xx = torch.cat([xx[:,1:], out], dim = 1)
@@ -121,7 +137,7 @@ class Transformer2(nn.Module):
 
 #Tranformer Encoder-Decoder
 class Transformer(nn.Module):
-    def __init__(self, input_dim, output_dim, nhead = 4, d_model = 128, num_layers = 6, dim_feedforward = 256):
+    def __init__(self, input_dim, output_dim, nhead = 4, d_model = 128, num_layers = 6, dim_feedforward = 256, quantile = False):
         super(Transformer, self).__init__()
         encoder_layer = nn.TransformerEncoderLayer(d_model, nhead, dim_feedforward, dropout = 0)
         decoder_layer = nn.TransformerDecoderLayer(d_model, nhead, dim_feedforward, dropout = 0)
@@ -130,6 +146,9 @@ class Transformer(nn.Module):
         self.embedding = nn.Linear(input_dim, d_model)
         self.output_layer = nn.Linear(d_model, output_dim)
         self.output_dim = output_dim
+        self.quantile = quantile
+        if self.quantile:
+            self.quantile = nn.Linear(1, 3)
 
     def _generate_square_subsequent_mask(self, sz):
         mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
@@ -157,36 +176,52 @@ class Transformer(nn.Module):
             tgt_mask = self._generate_square_subsequent_mask(tgt.shape[0]).to(device)
             out = self.transformer_decoder(tgt, encoder_output, tgt_mask = tgt_mask)
             out = self.output_layer(out).transpose(0,1)
+            
+        if self.quantile:
+            out = self.quantile(out.unsqueeze(-1))
         return out            
         
 ########### Latent ODE #########  
 class Latent_ODE(nn.Module):
-    def __init__(self, latent_dim=4, obs_dim=2, nhidden=20, nbatch=1):
+    def __init__(self, latent_dim=4, obs_dim=2, nhidden=20, rhidden = 20, aug = False, aug_dim = 2, quantile = False):
         super(Latent_ODE, self).__init__()
-        self.func = LatentODEfunc(latent_dim, nhidden)#.to(device)
-        self.rec = RecognitionRNN(latent_dim, obs_dim, nhidden)#.to(device)
-        self.dec = LatentODEDecoder(latent_dim, obs_dim, nhidden)#.to(device)
+        self.aug = aug
+        self.aug_dim = aug_dim
+        if self.aug:
+            self.rec = RecognitionRNN(latent_dim, obs_dim+aug_dim, rhidden)
+        else:
+            self.rec = RecognitionRNN(latent_dim, obs_dim, rhidden)
+    
+        self.func = LatentODEfunc(latent_dim, nhidden)
+        self.dec = LatentODEDecoder(latent_dim, obs_dim, nhidden)
+        self.quantile = quantile
+        if self.quantile:
+            self.quantile = nn.Linear(1, 3)
         
     def forward(self, xx, output_length):
-        time_steps = torch.linspace(0, 59, 60).float().to(device)[:output_length]
-        out = self.rec.forward(torch.flip(xx, [1]))
-        z0 = out
+        time_steps = torch.arange(0, output_length, 0.01).float().to(device)[:output_length]#torch.linspace(0, 59, 60).float().to(device)[:output_length]
+        if self.aug:
+            aug_ten = torch.zeros(xx.shape[0], xx.shape[1], self.aug_dim).float().to(device)
+            xx = torch.cat([xx, aug_ten], dim = -1)
+        z0 = self.rec.forward(torch.flip(xx, [1]))
         pred_z = odeint(self.func, z0, time_steps).permute(1, 0, 2)
-        pred_x = self.dec(pred_z)
-        return pred_x
+        out = self.dec(pred_z)
+        if self.quantile:
+            out = self.quantile(out.unsqueeze(-1))
+        return out  
     
 class LatentODEfunc(nn.Module):
     def __init__(self, latent_dim=4, nhidden=20):
         super(LatentODEfunc, self).__init__()
         self.model = nn.Sequential(
             nn.Linear(latent_dim, nhidden),
-            nn.ELU(inplace=True),
+            nn.ELU(),
             nn.Linear(nhidden, nhidden),
-            nn.ELU(inplace=True),
+            nn.ELU(),
             nn.Linear(nhidden, nhidden),
-            nn.ELU(inplace=True),
+            nn.ELU(),
             nn.Linear(nhidden, nhidden),
-            nn.ELU(inplace=True),
+            nn.ELU(),
             nn.Linear(nhidden, latent_dim)
         )
         self.nfe = 0
@@ -200,22 +235,20 @@ class RecognitionRNN(nn.Module):
     def __init__(self, latent_dim=4, obs_dim=2, nhidden=25):
         super(RecognitionRNN, self).__init__()
         self.nhidden = nhidden
-        self.model = nn.RNN(obs_dim, nhidden, batch_first = True)
+        self.model = nn.GRU(obs_dim, nhidden, batch_first = True)
         self.linear = nn.Linear(nhidden, latent_dim)
 
     def forward(self, x):
-        h0 = torch.zeros(1, x.shape[0], self.nhidden).to(device)
-        output, hn = self.model(x, h0)
-        return self.linear(output[:,-1])
+        #h0 = torch.zeros(1, x.shape[0], self.nhidden).to(device)
+        output, hn = self.model(x)#, h0
+        return self.linear(hn[0])
     
 class LatentODEDecoder(nn.Module):
     def __init__(self, latent_dim=4, obs_dim=2, nhidden=20):
         super(LatentODEDecoder, self).__init__()
         self.model = nn.Sequential(
             nn.Linear(latent_dim, nhidden),
-            nn.ReLU(inplace=True),
-            nn.Linear(nhidden, nhidden),
-            nn.ReLU(inplace=True),
+            nn.ReLU(),
             nn.Linear(nhidden, obs_dim)
         )
         
