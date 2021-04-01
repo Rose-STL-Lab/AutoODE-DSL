@@ -12,8 +12,8 @@ How can we learn a dynamical system to make forecasts, when some variables are u
 * AutoODE.py: Pytorch implementation of AutoODE(-COVID).
 * train.py: data loaders, train epoch, validation epoch, test epoch functions.
 
-3. Run_DSL.ipynb: run model function.
-4. Run_AutoODE.ipynb: Pytorch implementation of AdjMask_SuEIRD. 
+3. Run_DSL.ipynb: train deep sequence models and graph neural nets.
+4. Run_AutoODE.ipynb: training AutoODE-COVID. 
 5. Evaluation.ipynb: evaluation functions and prediction visualization
 
 
