@@ -13,7 +13,7 @@ How can we learn a dynamical system to make forecasts, when some variables are u
 * train.py: data loaders, train epoch, validation epoch, test epoch functions.
 
 3. Run_DSL.ipynb: train deep sequence models and graph neural nets.
-4. Run_AutoODE.ipynb: training AutoODE-COVID. 
+4. Run_AutoODE.ipynb: train AutoODE-COVID. 
 5. Evaluation.ipynb: evaluation functions and prediction visualization
 
 
