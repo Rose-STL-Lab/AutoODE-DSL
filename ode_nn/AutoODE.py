@@ -3,6 +3,7 @@ import torch.nn as nn
 import numpy as np
 from torch.utils import data
 import matplotlib.pyplot as plt
+import torch.nn.functional as F
 import random
 import warnings
 warnings.filterwarnings("ignore")
