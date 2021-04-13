@@ -32,7 +32,7 @@ How can we learn a dynamical system to make forecasts, when some variables are u
 @inproceedings{wang2020bridging,
 title={Bridging Physics-based and Data-driven modeling for Learning Dynamical Systems},
 author={Rui Wang and Danielle Maddix and Christos Faloutsos and Yuyang Wang and Rose Yu},
-journal={In proceedings of Learning for Dynamics and Control (L4DC)2021},
-year={2020}
+journal={In proceedings of Learning for Dynamics and Control (L4DC)},
+year={2021}
 }
 ```
